@@ -1,6 +1,5 @@
 import { BusinessInfo, Product } from './types';
 import { Cpu, Monitor, Wifi, Wrench, HardDrive, Printer } from 'lucide-react';
-import React from 'react';
 
 export const BUSINESS_INFO: BusinessInfo = {
   name: "MSIS DJERBA",
@@ -12,7 +11,7 @@ export const BUSINESS_INFO: BusinessInfo = {
     weekend: "Sunday: Closed"
   },
   social: {
-    facebook: "https://facebook.com/msis.djerba"
+    facebook: "https://www.facebook.com/msis.djerba"
   }
 };
 

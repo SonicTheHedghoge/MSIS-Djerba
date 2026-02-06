@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Phone, Clock, Facebook, Mail } from 'lucide-react';
+import { MapPin, Phone, Clock } from 'lucide-react';
 import { BUSINESS_INFO } from '../constants';
 
 const InfoSection: React.FC = () => {
