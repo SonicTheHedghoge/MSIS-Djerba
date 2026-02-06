@@ -1,5 +1,16 @@
-import { BusinessInfo, Product } from './types';
+import { BusinessInfo } from './types';
 import { Cpu, Monitor, Wifi, Wrench, HardDrive, Printer } from 'lucide-react';
+
+export interface SeedProduct {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  details?: string[];
+  discount?: string;
+  images: string[];
+  price?: string | number;
+}
 
 export const BUSINESS_INFO: BusinessInfo = {
   name: "MSIS DJERBA",
@@ -21,7 +32,7 @@ export const HERO_IMAGES = [
   "https://picsum.photos/seed/circuit/1920/1080", // Circuit
 ];
 
-export const PRODUCTS: Product[] = [
+export const PRODUCTS: SeedProduct[] = [
   {
     id: 'romoss-pb-01',
     name: 'ROMOSS Premium Power Banks',

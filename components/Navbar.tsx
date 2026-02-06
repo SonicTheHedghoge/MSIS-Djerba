@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ShoppingBag } from 'lucide-react';
 import { BUSINESS_INFO } from '../constants';
 
 const Navbar: React.FC = () => {
@@ -8,84 +8,105 @@ const Navbar: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      setScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const navLinks = [
-    { name: 'Home', href: '#home' },
-    { name: 'Products', href: '#products' },
-    { name: 'Shop', href: '#shop' },
-    { name: 'Location', href: '#location' },
+    { name: 'Computers', href: '#shop' },
+    { name: 'Components', href: '#shop' },
+    { name: 'Services', href: '#expertise' },
+    { name: 'Contact', href: '#location' },
   ];
 
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    setIsOpen(false);
+    const element = document.querySelector(href);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-brand-dark/90 backdrop-blur-lg border-b border-white/10 py-3' : 'bg-transparent py-5'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <img 
-              src="https://i.ibb.co/7Nnn85zF/302783568-496662659136297-119593787000234011-n.png" 
-              alt="MSIS DJERBA Logo" 
-              className="h-12 w-12 object-cover rounded-full border-2 border-brand-accent/30 shadow-lg shadow-brand-accent/20"
-            />
-            <span className="text-xl md:text-2xl font-bold tracking-tight text-white">
-              MSIS <span className="text-brand-accent">DJERBA</span>
-            </span>
-          </div>
-
-          {/* Desktop Menu */}
-          <div className="hidden md:flex space-x-8 items-center">
-            {navLinks.map((link) => (
-              <a 
-                key={link.name} 
-                href={link.href} 
-                className="text-gray-300 hover:text-brand-accent transition-colors text-sm font-medium uppercase tracking-wider"
-              >
-                {link.name}
-              </a>
-            ))}
-            <a 
-                href={`tel:${BUSINESS_INFO.phone.replace(/\s/g, '')}`}
-                className="bg-brand-accent hover:bg-cyan-400 text-brand-dark px-5 py-2 rounded-full font-bold transition-transform hover:scale-105"
-            >
-                Call Now
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${scrolled ? 'py-3' : 'py-6'}`}>
+      <div className="max-w-screen-xl mx-auto px-6 flex justify-center">
+        
+        {/* Floating Pill Container - Apple Dynamic Island Style */}
+        <div className={`
+            flex items-center justify-between px-6 py-3.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]
+            ${scrolled || isOpen 
+                ? 'bg-white/80 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-white/60 w-full md:w-[680px]' 
+                : 'bg-transparent w-full md:w-[680px]'}
+        `}>
+            
+            {/* Logo */}
+            <a href="#" className="flex items-center gap-2.5 group relative z-50">
+                <div className="w-8 h-8 rounded-full bg-[#1d1d1f] flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+                    <span className="font-bold text-[10px] tracking-widest">MSIS</span>
+                </div>
+                <span className="font-semibold text-sm tracking-tight text-[#1d1d1f] group-hover:opacity-70 transition-opacity">
+                    DJERBA
+                </span>
             </a>
-          </div>
 
-          {/* Mobile Button */}
-          <div className="md:hidden">
-            <button onClick={() => setIsOpen(!isOpen)} className="text-white hover:text-brand-accent">
-              {isOpen ? <X size={28} /> : <Menu size={28} />}
+            {/* Desktop Links */}
+            <div className="hidden md:flex items-center justify-center space-x-8 absolute left-1/2 -translate-x-1/2">
+                {navLinks.map((link) => (
+                <a 
+                    key={link.name} 
+                    href={link.href} 
+                    onClick={(e) => handleScroll(e, link.href)}
+                    className="text-[13px] font-medium text-[#1d1d1f]/80 hover:text-[#0071e3] transition-colors tracking-wide"
+                >
+                    {link.name}
+                </a>
+                ))}
+            </div>
+
+            {/* Actions */}
+            <div className="hidden md:flex items-center gap-5 relative z-50">
+                 <a href="#shop" onClick={(e) => handleScroll(e, '#shop')} className="text-[#1d1d1f] hover:text-[#0071e3] transition-colors">
+                    <ShoppingBag size={18} strokeWidth={2} />
+                 </a>
+                 <a 
+                    href={`tel:${BUSINESS_INFO.phone.replace(/\s/g, '')}`}
+                    className="bg-[#0071e3] text-white px-4 py-1.5 rounded-full text-[12px] font-medium hover:bg-[#0077ED] transition-all hover:shadow-lg hover:shadow-blue-500/30"
+                >
+                    Call Us
+                </a>
+            </div>
+
+            {/* Mobile Toggle */}
+            <button onClick={() => setIsOpen(!isOpen)} className="md:hidden text-[#1d1d1f] relative z-50 p-1">
+                {isOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
-          </div>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Overlay */}
       {isOpen && (
-        <div className="md:hidden bg-brand-dark/95 backdrop-blur-xl border-b border-white/10 absolute w-full">
-          <div className="px-4 pt-2 pb-6 space-y-2">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                className="block px-3 py-3 text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-md"
-                onClick={() => setIsOpen(false)}
-              >
-                {link.name}
-              </a>
-            ))}
-             <a 
-                href={`tel:${BUSINESS_INFO.phone.replace(/\s/g, '')}`}
-                className="block w-full text-center mt-4 bg-brand-accent text-brand-dark px-5 py-3 rounded-lg font-bold"
-            >
-                {BUSINESS_INFO.phone}
-            </a>
-          </div>
+        <div className="md:hidden fixed inset-0 z-40 bg-white/95 backdrop-blur-3xl animate-fade-in pt-32 px-6">
+            <div className="flex flex-col space-y-6 items-center text-center">
+                {navLinks.map((link) => (
+                <a
+                    key={link.name}
+                    href={link.href}
+                    onClick={(e) => handleScroll(e, link.href)}
+                    className="text-2xl font-semibold text-[#1d1d1f] hover:text-[#0071e3] transition-colors"
+                >
+                    {link.name}
+                </a>
+                ))}
+                 <a 
+                    href={`tel:${BUSINESS_INFO.phone.replace(/\s/g, '')}`}
+                    className="mt-8 bg-[#0071e3] text-white px-8 py-4 rounded-2xl text-lg font-medium shadow-xl shadow-blue-500/20 w-full max-w-xs"
+                >
+                    Call {BUSINESS_INFO.phone}
+                </a>
+            </div>
         </div>
       )}
     </nav>

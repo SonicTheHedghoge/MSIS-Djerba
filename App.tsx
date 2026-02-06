@@ -1,3 +1,5 @@
+import React from 'react';
+import { HashRouter, Routes, Route, Outlet } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import ProductCategories from './components/ProductCategories';
@@ -5,24 +7,41 @@ import ShopSection from './components/ShopSection';
 import InfoSection from './components/InfoSection';
 import Footer from './components/Footer';
 import TechAssistant from './components/TechAssistant';
-import ParticleBackground from './components/ParticleBackground';
+import AdminPanel from './components/AdminPanel';
+
+// Context Providers
+import { StoreProvider } from './contexts/StoreContext';
+import { AuthProvider } from './contexts/AuthContext';
+
+const PublicLayout: React.FC = () => {
+  return (
+    <div className="bg-white min-h-screen text-brand-black relative overflow-x-hidden">
+      <Navbar />
+      <main>
+        <Hero />
+        <ProductCategories />
+        <ShopSection />
+        <InfoSection />
+      </main>
+      <Footer />
+      <TechAssistant />
+    </div>
+  );
+};
 
 function App() {
   return (
-    <div className="bg-brand-dark min-h-screen text-slate-50 selection:bg-brand-accent selection:text-brand-dark relative">
-      <ParticleBackground />
-      <div className="relative z-10">
-        <Navbar />
-        <main>
-          <Hero />
-          <ProductCategories />
-          <ShopSection />
-          <InfoSection />
-        </main>
-        <Footer />
-        <TechAssistant />
-      </div>
-    </div>
+    <StoreProvider>
+      <AuthProvider>
+        <HashRouter>
+          <Routes>
+            <Route path="/" element={<PublicLayout />} />
+            {/* Obscured Admin Route - Security through obscurity layer 1 */}
+            <Route path="/secure-sys-admin" element={<AdminPanel />} />
+          </Routes>
+        </HashRouter>
+      </AuthProvider>
+    </StoreProvider>
   );
 }
 

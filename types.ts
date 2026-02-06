@@ -27,13 +27,61 @@ export interface BusinessInfo {
   };
 }
 
+// Normalized Data Structures for Database/Context
+
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface Product {
   id: string;
   name: string;
-  description: string;
-  details: string[];
-  price?: string;
-  discount?: string;
+  brand: string;
+  categoryId: string;
+  description: string; // Supports rich text (HTML string) or markdown
+  specs: Record<string, string>; // Key-Value pairs for technical specs
+  price: number;
+  stock: number;
   images: string[];
-  category: string;
+  createdAt: string;
+}
+
+export interface Offer {
+  id: string;
+  name: string;
+  type: 'PERCENTAGE' | 'FIXED_AMOUNT';
+  value: number;
+  startDate: string;
+  endDate: string;
+  productIds: string[]; // Products this offer applies to
+  description?: string;
+  isActive: boolean;
+}
+
+export interface AdminUser {
+  username: string;
+  isAuthenticated: boolean;
+  lastLogin?: string;
+}
+
+export interface AuditLog {
+  id: string;
+  timestamp: string;
+  action: string;
+  details: string;
+  severity: 'INFO' | 'WARNING' | 'CRITICAL';
+  ip: string; // Simulated IP/UserAgent
+}
+
+// Filter State Interface
+export interface ProductFilter {
+  search: string;
+  categoryId: string;
+  brand: string;
+  minPrice: number;
+  maxPrice: number;
+  onlyInStock: boolean;
+  onlyDiscounted: boolean;
 }
