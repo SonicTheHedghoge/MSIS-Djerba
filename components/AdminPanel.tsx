@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useStore } from '../contexts/StoreContext';
 import { Product, Offer, Order } from '../types';
 import { supabase } from '../services/supabaseClient';
-import { Plus, Trash2, Edit2, LogOut, Package, Tag, Layers, X, ShieldAlert, KeyRound, QrCode, ShoppingBag } from 'lucide-react';
+import { Plus, Trash2, Edit2, LogOut, Package, Tag, Layers, X, ShieldAlert, KeyRound, QrCode, ShoppingBag, Upload, Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import QRCode from 'qrcode';
 
@@ -30,16 +30,19 @@ const AdminPanel: React.FC = () => {
   const [editingOffer, setEditingOffer] = useState<Partial<Offer> | null>(null);
   const [newCategory, setNewCategory] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Fetch Orders
   useEffect(() => {
+    // We fetch orders even if just locally authenticated, relying on the public RLS policy we set up.
     if (user?.isAuthenticated && activeTab === 'orders') {
       const fetchOrders = async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('orders')
           .select('*')
           .order('created_at', { ascending: false });
         
+        if (error) console.error("Error fetching orders:", error);
         if (data) setOrders(data as Order[]);
       };
       fetchOrders();
@@ -68,6 +71,37 @@ const AdminPanel: React.FC = () => {
     
     if (!result.success) {
       setLoginError(result.message || 'Authentication Failed');
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    setIsUploading(true);
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      if (data) {
+          const currentImages = editingProduct?.images || [];
+          setEditingProduct(prev => prev ? ({...prev, images: [...currentImages, data.publicUrl]}) : null);
+      }
+    } catch (error) {
+      alert('Upload failed: ' + (error as any).message);
+    } finally {
+        setIsUploading(false);
     }
   };
 
@@ -327,7 +361,7 @@ const AdminPanel: React.FC = () => {
                         <div className="bg-[#f5f5f7] rounded-xl p-4 mb-4">
                           <p className="text-xs font-bold text-gray-500 uppercase mb-2">Order Items</p>
                           <ul className="space-y-2">
-                            {order.products.map((p, idx) => (
+                            {order.products?.map((p, idx) => (
                               <li key={idx} className="flex justify-between text-sm">
                                 <span>{p.quantity}x {p.name}</span>
                                 <span className="font-medium">{p.price.toFixed(2)} TND</span>
@@ -349,42 +383,6 @@ const AdminPanel: React.FC = () => {
                     ))}
                   </div>
                 )}
-            </div>
-        )}
-
-        {/* AUDIT LOG TAB */}
-        {activeTab === 'audit' && (
-             <div className="max-w-5xl mx-auto">
-                <h1 className="text-3xl font-bold text-[#1d1d1f] mb-8">Security Audit Logs</h1>
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-                    <table className="w-full text-left">
-                        <thead className="bg-[#f5f5f7] border-b border-gray-200">
-                            <tr>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase">Timestamp</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase">Level</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase">Action</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase">Details</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {logs.map(log => (
-                                <tr key={log.id} className="hover:bg-gray-50 font-mono text-sm">
-                                    <td className="p-4 text-gray-500">{new Date(log.timestamp).toLocaleString()}</td>
-                                    <td className="p-4">
-                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
-                                            log.severity === 'CRITICAL' ? 'bg-red-100 text-red-700' : 
-                                            log.severity === 'WARNING' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'
-                                        }`}>
-                                            {log.severity}
-                                        </span>
-                                    </td>
-                                    <td className="p-4 font-bold text-[#1d1d1f]">{log.action}</td>
-                                    <td className="p-4 text-gray-600 truncate max-w-xs">{log.details}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
             </div>
         )}
 
@@ -439,17 +437,41 @@ const AdminPanel: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Image URLs (comma separated)</label>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Product Images</label>
+                                
+                                {/* Upload Button */}
+                                <div className="mb-4">
+                                    <label className="flex items-center gap-2 cursor-pointer bg-[#1d1d1f] text-white px-4 py-2 rounded-lg w-fit hover:bg-black transition-colors">
+                                        {isUploading ? <Loader className="animate-spin" size={18} /> : <Upload size={18} />}
+                                        <span className="text-sm font-medium">{isUploading ? 'Uploading...' : 'Upload from Laptop'}</span>
+                                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
+                                    </label>
+                                </div>
+
                                 <input 
                                     type="text" 
-                                    className="w-full bg-[#f5f5f7] rounded-lg p-3" 
-                                    placeholder="https://..., https://..."
+                                    className="w-full bg-[#f5f5f7] rounded-lg p-3 mb-4 text-sm" 
+                                    placeholder="Or paste image URL..."
                                     value={editingProduct.images?.join(', ')} 
                                     onChange={e => setEditingProduct({...editingProduct, images: e.target.value.split(',').map(s => s.trim())})} 
                                 />
-                                <div className="flex gap-2 mt-4 overflow-x-auto">
+                                <div className="flex gap-2 mt-2 overflow-x-auto pb-2">
                                     {editingProduct.images?.map((img, i) => (
-                                        img && <img key={i} src={img} className="w-20 h-20 object-cover rounded-lg border border-gray-200" alt="Preview"/>
+                                        img && (
+                                            <div key={i} className="relative group">
+                                                <img src={img} className="w-24 h-24 object-cover rounded-lg border border-gray-200" alt="Preview"/>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newImages = editingProduct.images?.filter((_, idx) => idx !== i);
+                                                        setEditingProduct({...editingProduct, images: newImages});
+                                                    }}
+                                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
+                                        )
                                     ))}
                                 </div>
                             </div>
@@ -498,7 +520,8 @@ const AdminPanel: React.FC = () => {
             </div>
         )}
 
-        {/* OFFERS TAB */}
+        {/* OFFERS TAB, CATEGORIES TAB, AUDIT TAB can remain as is... */}
+        {/* Simplified for brevity as they were unchanged in logic, just re-rendering existing structure for consistency if needed, but XML replace handles context */}
         {activeTab === 'offers' && (
             <div className="max-w-4xl mx-auto">
                 <div className="flex justify-between items-center mb-8">
@@ -582,6 +605,42 @@ const AdminPanel: React.FC = () => {
             </div>
         )}
 
+        {/* AUDIT LOG TAB */}
+        {activeTab === 'audit' && (
+             <div className="max-w-5xl mx-auto">
+                <h1 className="text-3xl font-bold text-[#1d1d1f] mb-8">Security Audit Logs</h1>
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
+                    <table className="w-full text-left">
+                        <thead className="bg-[#f5f5f7] border-b border-gray-200">
+                            <tr>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase">Timestamp</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase">Level</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase">Action</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {logs.map(log => (
+                                <tr key={log.id} className="hover:bg-gray-50 font-mono text-sm">
+                                    <td className="p-4 text-gray-500">{new Date(log.timestamp).toLocaleString()}</td>
+                                    <td className="p-4">
+                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                                            log.severity === 'CRITICAL' ? 'bg-red-100 text-red-700' : 
+                                            log.severity === 'WARNING' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'
+                                        }`}>
+                                            {log.severity}
+                                        </span>
+                                    </td>
+                                    <td className="p-4 font-bold text-[#1d1d1f]">{log.action}</td>
+                                    <td className="p-4 text-gray-600 truncate max-w-xs">{log.details}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        )}
+        
         {/* CATEGORIES TAB */}
         {activeTab === 'categories' && (
             <div className="max-w-xl mx-auto">
