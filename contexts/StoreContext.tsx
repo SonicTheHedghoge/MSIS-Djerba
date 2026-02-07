@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, Category, Offer, SiteSettings, SiteTheme } from '../types';
+import { Product, Category, Offer, SiteSettings } from '../types';
 import { PRODUCTS as INITIAL_PRODUCTS_RAW } from '../constants';
 import { supabase } from '../services/supabaseClient';
 
@@ -95,7 +95,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const fetchSettings = async () => {
-    const { data, error } = await supabase.from('site_settings').select('*').single();
+    // Removed unused 'error' variable
+    const { data } = await supabase.from('site_settings').select('*').single();
     if (data) {
         setSiteSettings({ theme: data.theme, is_dark_mode: data.is_dark_mode });
     }
