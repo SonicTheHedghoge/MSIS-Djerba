@@ -91,11 +91,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
     const googleMapsUrl = `https://www.google.com/maps?q=${locationCoords.lat},${locationCoords.lng}`;
     const formattedTotal = `${total.toFixed(2)} TND`;
     
-    // Summary string for Formspree/Text Email
-    const cartSummary = cartItems.map(item => 
-      `- ${item.quantity}x ${item.name} (${item.activePrice} TND)`
-    ).join('\n');
-
+    // Data prep
     const productJson = cartItems.map(item => ({
         id: item.id,
         name: item.name,
@@ -105,9 +101,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
 
     try {
       // ---------------------------------------------------------
-      // 1. Store in Supabase (PRIMARY SOURCE OF TRUTH)
+      // 1. Store in Supabase (CRITICAL STEP)
       // ---------------------------------------------------------
-      const { error: sbError } = await supabase
+      // We set a timeout for the DB call so it doesn't hang forever
+      const dbPromise = supabase
         .from('orders')
         .insert([{
           full_name: fullName,
@@ -118,17 +115,32 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
           total_amount: total,
           status: 'PENDING'
         }]);
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timed out')), 10000)
+      );
+
+      const { error: sbError } = await Promise.race([dbPromise, timeoutPromise]) as any;
 
       if (sbError) {
-        // If Database fails, we strictly fail the order.
         console.error("Supabase Error:", sbError);
         throw new Error("Connection failed. Please try again.");
       }
 
       // ---------------------------------------------------------
-      // 2. Send to Formspree (Notification - Non-blocking)
+      // 2. Success - Update UI Immediately
       // ---------------------------------------------------------
-      try {
+      setStep('success');
+
+      // ---------------------------------------------------------
+      // 3. Send Notifications (BACKGROUND - Fire and Forget)
+      // ---------------------------------------------------------
+      // We do NOT await these. This prevents the UI from hanging if emails fail.
+      const sendNotifications = async () => {
+        const cartSummary = cartItems.map(item => 
+          `- ${item.quantity}x ${item.name} (${item.activePrice} TND)`
+        ).join('\n');
+
         const formspreeData = new FormData();
         formspreeData.append('firstName', firstName);
         formspreeData.append('lastName', lastName);
@@ -139,22 +151,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
         formspreeData.append('orderTotal', formattedTotal);
         formspreeData.append('cartDetails', cartSummary);
 
-        // Replace 'mlgwenjn' with your actual Formspree ID if you have one.
-        // We do not await this strictly, or we catch errors so it doesn't block success.
-        await fetch("https://formspree.io/f/mlgwenjn", {
+        // Send Formspree
+        fetch("https://formspree.io/f/mlgwenjn", {
             method: "POST",
             body: formspreeData,
             headers: { 'Accept': 'application/json' }
-        });
-      } catch (err) {
-        console.warn("Formspree notification failed (ignoring):", err);
-      }
+        }).catch(err => console.warn("Formspree ignored:", err));
 
-      // ---------------------------------------------------------
-      // 3. Send Confirmation via Resend (Serverless - Non-blocking)
-      // ---------------------------------------------------------
-      try {
-        await fetch('/api/send-confirmation', {
+        // Send Resend Confirmation
+        fetch('/api/send-confirmation', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -165,18 +170,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
                 products: productJson,
                 googleMapsUrl
             })
-        });
-      } catch (emailErr) {
-        console.warn("Resend email failed:", emailErr);
-      }
+        }).catch(err => console.warn("Resend ignored:", err));
+      };
 
-      // Success (Because Supabase worked)
-      setStep('success');
-      setTimeout(() => onSuccess(), 500);
+      sendNotifications();
+
+      // Close modal after delay
+      setTimeout(() => onSuccess(), 1500);
 
     } catch (err: any) {
       console.error("Order Error:", err);
-      setError(err.message || "Failed to submit order.");
+      setError(err.message || "Failed to submit order. Please try again.");
       setStep('form');
     }
   };
@@ -298,7 +302,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
           <div className="p-16 flex flex-col items-center justify-center text-center h-[400px]">
             <Loader size={48} className="text-[#0071e3] animate-spin mb-6" />
             <h3 className="text-xl font-bold text-[#1d1d1f] mb-2">Processing Order</h3>
-            <p className="text-gray-500">Securing your products and sending confirmation...</p>
+            <p className="text-gray-500">Securing your products...</p>
           </div>
         )}
 
@@ -309,14 +313,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
             </div>
             <h3 className="text-2xl font-bold text-[#1d1d1f] mb-2">Order Confirmed!</h3>
             <p className="text-gray-500 mb-8 max-w-xs mx-auto">
-              Thank you, <b>{firstName}</b>. We've sent a confirmation email to <b>{email}</b> and will call you soon.
+              Thank you, <b>{firstName}</b>. We have received your order and will contact you shortly.
             </p>
-            <button 
-              onClick={onClose}
-              className="bg-[#0071e3] text-white px-8 py-3 rounded-full font-medium hover:bg-[#0077ED] transition-colors"
-            >
-              Back to Shop
-            </button>
           </div>
         )}
 
