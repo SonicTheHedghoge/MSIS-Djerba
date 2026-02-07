@@ -105,7 +105,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
 
     try {
       // ---------------------------------------------------------
-      // 1. Store in Supabase (For Admin Panel / Backup)
+      // 1. Store in Supabase (PRIMARY SOURCE OF TRUTH)
       // ---------------------------------------------------------
       const { error: sbError } = await supabase
         .from('orders')
@@ -119,36 +119,40 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
           status: 'PENDING'
         }]);
 
-      if (sbError) console.warn("Supabase Log Error (Non-fatal):", sbError);
-
-      // ---------------------------------------------------------
-      // 2. Send to Formspree (Admin Notification)
-      // ---------------------------------------------------------
-      const formspreeData = new FormData();
-      formspreeData.append('firstName', firstName);
-      formspreeData.append('lastName', lastName);
-      formspreeData.append('email', email);
-      formspreeData.append('phone', phone);
-      formspreeData.append('message', message);
-      formspreeData.append('exactLocation', googleMapsUrl);
-      formspreeData.append('orderTotal', formattedTotal);
-      formspreeData.append('cartDetails', cartSummary);
-
-      const formspreeResponse = await fetch("https://formspree.io/f/mlgwenjn", {
-        method: "POST",
-        body: formspreeData,
-        headers: { 'Accept': 'application/json' }
-      });
-
-      if (!formspreeResponse.ok) {
-        throw new Error("Could not send order to store. Please try again.");
+      if (sbError) {
+        // If Database fails, we strictly fail the order.
+        console.error("Supabase Error:", sbError);
+        throw new Error("Connection failed. Please try again.");
       }
 
       // ---------------------------------------------------------
-      // 3. Send Confirmation via Resend (Serverless Function)
+      // 2. Send to Formspree (Notification - Non-blocking)
       // ---------------------------------------------------------
-      // Note: This call might fail in local dev if api/ isn't running via 'vercel dev', 
-      // but we won't block the user success screen on it.
+      try {
+        const formspreeData = new FormData();
+        formspreeData.append('firstName', firstName);
+        formspreeData.append('lastName', lastName);
+        formspreeData.append('email', email);
+        formspreeData.append('phone', phone);
+        formspreeData.append('message', message);
+        formspreeData.append('exactLocation', googleMapsUrl);
+        formspreeData.append('orderTotal', formattedTotal);
+        formspreeData.append('cartDetails', cartSummary);
+
+        // Replace 'mlgwenjn' with your actual Formspree ID if you have one.
+        // We do not await this strictly, or we catch errors so it doesn't block success.
+        await fetch("https://formspree.io/f/mlgwenjn", {
+            method: "POST",
+            body: formspreeData,
+            headers: { 'Accept': 'application/json' }
+        });
+      } catch (err) {
+        console.warn("Formspree notification failed (ignoring):", err);
+      }
+
+      // ---------------------------------------------------------
+      // 3. Send Confirmation via Resend (Serverless - Non-blocking)
+      // ---------------------------------------------------------
       try {
         await fetch('/api/send-confirmation', {
             method: 'POST',
@@ -163,10 +167,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
             })
         });
       } catch (emailErr) {
-        console.warn("Resend email failed (likely local dev environment):", emailErr);
+        console.warn("Resend email failed:", emailErr);
       }
 
-      // Success
+      // Success (Because Supabase worked)
       setStep('success');
       setTimeout(() => onSuccess(), 500);
 
