@@ -102,3 +102,10 @@ export interface ProductFilter {
   onlyInStock: boolean;
   onlyDiscounted: boolean;
 }
+
+export type SiteTheme = 'default' | 'ramadan' | 'new_year' | 'mawlid' | 'eid';
+
+export interface SiteSettings {
+  theme: SiteTheme;
+  is_dark_mode: boolean;
+}

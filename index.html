@@ -13,6 +13,7 @@
 
     <script>
       tailwind.config = {
+        darkMode: 'class', // Enable class-based dark mode
         theme: {
           extend: {
             fontFamily: {
@@ -30,6 +31,7 @@
             animation: {
               'fade-in-up': 'fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards',
               'fade-in': 'fadeIn 1s ease-out forwards',
+              'slide-in-right': 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
             },
             keyframes: {
               fadeInUp: {
@@ -39,6 +41,10 @@
               fadeIn: {
                 '0%': { opacity: '0' },
                 '100%': { opacity: '1' },
+              },
+              slideInRight: {
+                '0%': { transform: 'translateX(100%)' },
+                '100%': { transform: 'translateX(0)' },
               }
             },
             boxShadow: {
@@ -58,6 +64,12 @@
         -moz-osx-font-smoothing: grayscale;
       }
       
+      /* Dark Mode Overrides */
+      .dark body {
+        background-color: #000000;
+        color: #f5f5f7;
+      }
+      
       /* Apple-style Glassmorphism */
       .glass-panel {
         background: rgba(255, 255, 255, 0.7);
@@ -75,6 +87,15 @@
       ::selection {
         background: #0071e3;
         color: white;
+      }
+
+      /* Scrollbar hiding utility */
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+      }
+      .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
       }
     </style>
 <script type="importmap">

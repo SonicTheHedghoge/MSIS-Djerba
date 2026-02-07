@@ -9,15 +9,20 @@ import Footer from './components/Footer';
 import TechAssistant from './components/TechAssistant';
 import AdminPanel from './components/AdminPanel';
 import CartDrawer from './components/CartDrawer';
+import ThemeOverlay from './components/ThemeOverlay';
 
 // Context Providers
-import { StoreProvider } from './contexts/StoreContext';
+import { StoreProvider, useStore } from './contexts/StoreContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 
-const PublicLayout: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { siteSettings } = useStore();
+  const isDark = siteSettings.is_dark_mode;
+
   return (
-    <div className="bg-white min-h-screen text-brand-black relative overflow-x-hidden">
+    <div className={`min-h-screen text-brand-black relative overflow-x-hidden transition-colors duration-500 ${isDark ? 'dark bg-[#000] text-white' : 'bg-white'}`}>
+      <ThemeOverlay />
       <Navbar />
       <CartDrawer />
       <main>
@@ -39,8 +44,8 @@ function App() {
         <CartProvider>
           <HashRouter>
             <Routes>
-              <Route path="/" element={<PublicLayout />} />
-              {/* Obscured Admin Route - Security through obscurity layer 1 */}
+              <Route path="/" element={<AppContent />} />
+              {/* Obscured Admin Route */}
               <Route path="/secure-sys-admin" element={<AdminPanel />} />
             </Routes>
           </HashRouter>

@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, Category, Offer } from '../types';
+import { Product, Category, Offer, SiteSettings, SiteTheme } from '../types';
 import { PRODUCTS as INITIAL_PRODUCTS_RAW } from '../constants';
+import { supabase } from '../services/supabaseClient';
 
 interface StoreContextType {
   products: Product[];
   categories: Category[];
   offers: Offer[];
+  siteSettings: SiteSettings;
+  updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
   addProduct: (product: Product) => void;
   updateProduct: (id: string, updates: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
@@ -60,8 +63,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [products, setProducts] = useState<Product[]>(SEED_PRODUCTS);
   const [categories, setCategories] = useState<Category[]>(SEED_CATEGORIES);
   const [offers, setOffers] = useState<Offer[]>(SEED_OFFERS);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>({ theme: 'default', is_dark_mode: false });
 
-  // Persistence (Simulating Database)
+  // 1. Fetch Data on Mount
   useEffect(() => {
     const savedProducts = localStorage.getItem('msis_products');
     if (savedProducts) setProducts(JSON.parse(savedProducts));
@@ -71,8 +75,45 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const savedCats = localStorage.getItem('msis_categories');
     if (savedCats) setCategories(JSON.parse(savedCats));
+
+    fetchSettings();
+
+    // Real-time subscription for settings
+    const subscription = supabase
+      .channel('site_settings_changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_settings' }, (payload) => {
+        setSiteSettings({
+            theme: payload.new.theme,
+            is_dark_mode: payload.new.is_dark_mode
+        });
+      })
+      .subscribe();
+
+    return () => {
+        subscription.unsubscribe();
+    };
   }, []);
 
+  const fetchSettings = async () => {
+    const { data, error } = await supabase.from('site_settings').select('*').single();
+    if (data) {
+        setSiteSettings({ theme: data.theme, is_dark_mode: data.is_dark_mode });
+    }
+  };
+
+  const updateSiteSettings = async (updates: Partial<SiteSettings>) => {
+      // Optimistic update
+      setSiteSettings(prev => ({ ...prev, ...updates }));
+      
+      const { error } = await supabase
+        .from('site_settings')
+        .update(updates)
+        .eq('id', 1);
+        
+      if (error) console.error("Failed to update settings:", error);
+  };
+
+  // Local Persistence for Product Data (Simulated DB)
   useEffect(() => {
     localStorage.setItem('msis_products', JSON.stringify(products));
     localStorage.setItem('msis_offers', JSON.stringify(offers));
@@ -103,7 +144,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addCategory = (category: Category) => setCategories([...categories, category]);
   
   const deleteCategory = (id: string) => {
-    // Basic integrity check
     const inUse = products.some(p => p.categoryId === id);
     if (inUse) {
       alert("Cannot delete category currently in use by products.");
@@ -112,11 +152,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCategories(categories.filter(c => c.id !== id));
   };
 
-  // Logic to determine active price based on offers
   const getProductPrice = (product: Product) => {
     const now = new Date();
-    
-    // Find active offer for this product
     const activeOffer = offers.find(o => 
       o.isActive && 
       o.productIds.includes(product.id) && 
@@ -144,7 +181,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   return (
     <StoreContext.Provider value={{
-      products, categories, offers,
+      products, categories, offers, siteSettings,
+      updateSiteSettings,
       addProduct, updateProduct, deleteProduct,
       addOffer, updateOffer, deleteOffer,
       addCategory, deleteCategory,
