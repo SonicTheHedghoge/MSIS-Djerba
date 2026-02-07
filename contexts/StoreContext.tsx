@@ -8,6 +8,8 @@ interface StoreContextType {
   categories: Category[];
   offers: Offer[];
   siteSettings: SiteSettings;
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
   updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
   addProduct: (product: Product) => void;
   updateProduct: (id: string, updates: Partial<Product>) => void;
@@ -64,6 +66,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [categories, setCategories] = useState<Category[]>(SEED_CATEGORIES);
   const [offers, setOffers] = useState<Offer[]>(SEED_OFFERS);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({ theme: 'default', is_dark_mode: false });
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // 1. Fetch Data on Mount
   useEffect(() => {
@@ -76,16 +79,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const savedCats = localStorage.getItem('msis_categories');
     if (savedCats) setCategories(JSON.parse(savedCats));
 
+    // Initialize Dark Mode from Local Storage or System Preference
+    const localTheme = localStorage.getItem('msis_theme_mode');
+    if (localTheme) {
+      setIsDarkMode(localTheme === 'dark');
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setIsDarkMode(true);
+    }
+
     fetchSettings();
 
     // Real-time subscription for settings
     const subscription = supabase
       .channel('site_settings_changes')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_settings' }, (payload) => {
-        setSiteSettings({
+        setSiteSettings(prev => ({
+            ...prev,
             theme: payload.new.theme,
-            is_dark_mode: payload.new.is_dark_mode
-        });
+            // We ignore is_dark_mode from DB now in favor of local preference, 
+            // but we keep the type for compatibility.
+        }));
       })
       .subscribe();
 
@@ -94,8 +107,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, []);
 
+  const toggleDarkMode = () => {
+    setIsDarkMode(prev => {
+      const newVal = !prev;
+      localStorage.setItem('msis_theme_mode', newVal ? 'dark' : 'light');
+      return newVal;
+    });
+  };
+
   const fetchSettings = async () => {
-    // Removed unused 'error' variable
     const { data } = await supabase.from('site_settings').select('*').single();
     if (data) {
         setSiteSettings({ theme: data.theme, is_dark_mode: data.is_dark_mode });
@@ -182,8 +202,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   return (
     <StoreContext.Provider value={{
-      products, categories, offers, siteSettings,
-      updateSiteSettings,
+      products, categories, offers, siteSettings, isDarkMode,
+      toggleDarkMode, updateSiteSettings,
       addProduct, updateProduct, deleteProduct,
       addOffer, updateOffer, deleteOffer,
       addCategory, deleteCategory,

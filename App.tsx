@@ -17,11 +17,10 @@ import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 
 const AppContent: React.FC = () => {
-  const { siteSettings } = useStore();
-  const isDark = siteSettings.is_dark_mode;
+  const { isDarkMode } = useStore();
 
   return (
-    <div className={`min-h-screen text-brand-black relative overflow-x-hidden transition-colors duration-500 ${isDark ? 'dark bg-[#000] text-white' : 'bg-white'}`}>
+    <div className={`min-h-screen text-brand-black relative overflow-x-hidden transition-colors duration-500 ${isDarkMode ? 'dark bg-[#000] text-white' : 'bg-white'}`}>
       <ThemeOverlay />
       <Navbar />
       <CartDrawer />

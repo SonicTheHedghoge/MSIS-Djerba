@@ -13,8 +13,7 @@ declare global {
 const InfoSection: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
-  const { siteSettings } = useStore();
-  const isDark = siteSettings.is_dark_mode;
+  const { isDarkMode } = useStore();
 
   // Houmt Souk Coordinates
   const COORDINATES = { lat: 33.876, lng: 10.858 };
@@ -46,7 +45,7 @@ const InfoSection: React.FC = () => {
 
     // Use a clean, muted tile layer (CartoDB Positron) for that premium Apple feel
     // If dark mode, use Dark Matter tiles
-    const tileUrl = isDark 
+    const tileUrl = isDarkMode 
         ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
         : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 
@@ -73,45 +72,45 @@ const InfoSection: React.FC = () => {
                   mapInstance.current.removeLayer(layer);
               }
           });
-           const tileUrl = isDark 
+           const tileUrl = isDarkMode 
             ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
             : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
            
            window.L.tileLayer(tileUrl, { maxZoom: 19 }).addTo(mapInstance.current);
       }
-  }, [isDark]);
+  }, [isDarkMode]);
 
   return (
-    <section id="location" className={`py-32 transition-colors duration-500 ${isDark ? 'bg-[#000]' : 'bg-[#f5f5f7]'}`}>
+    <section id="location" className={`py-32 transition-colors duration-500 ${isDarkMode ? 'bg-[#000]' : 'bg-[#f5f5f7]'}`}>
       <div className="max-w-[1200px] mx-auto px-6">
         
-        <div className={`rounded-[40px] p-8 md:p-16 shadow-sm overflow-hidden relative transition-colors duration-500 ${isDark ? 'bg-[#1d1d1f]' : 'bg-white'}`}>
+        <div className={`rounded-[40px] p-8 md:p-16 shadow-sm overflow-hidden relative transition-colors duration-500 ${isDarkMode ? 'bg-[#1d1d1f]' : 'bg-white'}`}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-16 relative z-10">
                 <div>
-                     <h2 className={`text-4xl font-semibold mb-8 tracking-tight ${isDark ? 'text-white' : 'text-[#1d1d1f]'}`}>
+                     <h2 className={`text-4xl font-semibold mb-8 tracking-tight ${isDarkMode ? 'text-white' : 'text-[#1d1d1f]'}`}>
                         Visit us in Houmt Souk.
                     </h2>
                     
                     <div className="space-y-8">
                         <div>
-                            <h3 className={`text-sm font-bold uppercase tracking-wide mb-2 ${isDark ? 'text-gray-400' : 'text-[#1d1d1f]'}`}>Address</h3>
-                            <p className={`text-lg leading-relaxed max-w-xs ${isDark ? 'text-gray-300' : 'text-[#86868b]'}`}>
+                            <h3 className={`text-sm font-bold uppercase tracking-wide mb-2 ${isDarkMode ? 'text-gray-400' : 'text-[#1d1d1f]'}`}>Address</h3>
+                            <p className={`text-lg leading-relaxed max-w-xs ${isDarkMode ? 'text-gray-300' : 'text-[#86868b]'}`}>
                                 {BUSINESS_INFO.address}<br/>
                                 {BUSINESS_INFO.location}
                             </p>
                         </div>
                         
                         <div>
-                            <h3 className={`text-sm font-bold uppercase tracking-wide mb-2 ${isDark ? 'text-gray-400' : 'text-[#1d1d1f]'}`}>Contact</h3>
-                            <a href={`tel:${BUSINESS_INFO.phone}`} className={`text-lg font-medium hover:text-[#0071e3] transition-colors ${isDark ? 'text-white' : 'text-[#1d1d1f]'}`}>
+                            <h3 className={`text-sm font-bold uppercase tracking-wide mb-2 ${isDarkMode ? 'text-gray-400' : 'text-[#1d1d1f]'}`}>Contact</h3>
+                            <a href={`tel:${BUSINESS_INFO.phone}`} className={`text-lg font-medium hover:text-[#0071e3] transition-colors ${isDarkMode ? 'text-white' : 'text-[#1d1d1f]'}`}>
                                 {BUSINESS_INFO.phone}
                             </a>
                         </div>
 
                          <div>
-                            <h3 className={`text-sm font-bold uppercase tracking-wide mb-2 ${isDark ? 'text-gray-400' : 'text-[#1d1d1f]'}`}>Hours</h3>
-                            <p className={isDark ? 'text-gray-300' : 'text-[#86868b]'}>{BUSINESS_INFO.hours.weekdays}</p>
-                            <p className={isDark ? 'text-gray-300' : 'text-[#86868b]'}>{BUSINESS_INFO.hours.weekend}</p>
+                            <h3 className={`text-sm font-bold uppercase tracking-wide mb-2 ${isDarkMode ? 'text-gray-400' : 'text-[#1d1d1f]'}`}>Hours</h3>
+                            <p className={isDarkMode ? 'text-gray-300' : 'text-[#86868b]'}>{BUSINESS_INFO.hours.weekdays}</p>
+                            <p className={isDarkMode ? 'text-gray-300' : 'text-[#86868b]'}>{BUSINESS_INFO.hours.weekend}</p>
                         </div>
                         
                         <a 

@@ -10,7 +10,7 @@ import QRCode from 'qrcode';
 const AdminPanel: React.FC = () => {
   const { user, login, logout, isLocked, lockoutTimeRemaining, requiresMfaSetup, mfaSecret, completeMfaSetup, logs, logAction } = useAuth();
   const { 
-    products, categories, offers, siteSettings, updateSiteSettings,
+    products, categories, offers, siteSettings, updateSiteSettings, isDarkMode, toggleDarkMode,
     addProduct, updateProduct, deleteProduct,
     addCategory, deleteCategory,
     addOffer, deleteOffer, updateOffer
@@ -471,32 +471,32 @@ const AdminPanel: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Dark Mode Toggle */}
+                    {/* Dark Mode Toggle - Now controls local state only */}
                     <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-200">
                         <h3 className="text-lg font-bold text-[#1d1d1f] mb-4 flex items-center gap-2">
-                            {siteSettings.is_dark_mode ? <Moon size={20} className="text-indigo-500"/> : <Sun size={20} className="text-orange-500"/>}
-                            Color Scheme
+                            {isDarkMode ? <Moon size={20} className="text-indigo-500"/> : <Sun size={20} className="text-orange-500"/>}
+                            Your View Mode
                         </h3>
                         <div className="flex items-center justify-between p-4 bg-[#f5f5f7] rounded-xl">
                             <span className="font-medium text-gray-700">Dark Mode</span>
                             <button 
                                 onClick={() => {
-                                    updateSiteSettings({ is_dark_mode: !siteSettings.is_dark_mode });
-                                    logAction('THEME_CHANGE', `Toggled Dark Mode to ${!siteSettings.is_dark_mode}`, 'INFO');
+                                    toggleDarkMode();
+                                    logAction('THEME_TOGGLE', `Admin toggled local dark mode to ${!isDarkMode}`, 'INFO');
                                 }}
-                                className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ${siteSettings.is_dark_mode ? 'bg-[#1d1d1f]' : 'bg-gray-300'}`}
+                                className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ${isDarkMode ? 'bg-[#1d1d1f]' : 'bg-gray-300'}`}
                             >
-                                <div className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform duration-300 ${siteSettings.is_dark_mode ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                                <div className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform duration-300 ${isDarkMode ? 'translate-x-6' : 'translate-x-0'}`}></div>
                             </button>
                         </div>
                         <p className="text-xs text-gray-400 mt-4">
-                            Toggles the base color palette of the public website between Light and Apple Dark Gray.
+                            Switch between Light and Dark mode for your current session. This does not affect other users.
                         </p>
                     </div>
 
-                    {/* Seasonal Theme Selector */}
+                    {/* Seasonal Theme Selector - Remains Global */}
                     <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-200">
-                        <h3 className="text-lg font-bold text-[#1d1d1f] mb-4">Seasonal Decorations</h3>
+                        <h3 className="text-lg font-bold text-[#1d1d1f] mb-4">Seasonal Decorations (Global)</h3>
                         <div className="space-y-3">
                             {[
                                 { id: 'default', label: 'None (Standard)', icon: '⚪️' },
