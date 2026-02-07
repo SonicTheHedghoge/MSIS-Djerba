@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, ShoppingCart, Search, Filter, X } from 'lucide-react';
+import { ShoppingCart, Search, Filter } from 'lucide-react';
 import { useStore } from '../contexts/StoreContext';
 import { useCart } from '../contexts/CartContext';
 import { ProductFilter } from '../types';
@@ -48,22 +48,6 @@ const ShopSection: React.FC = () => {
       return true;
     });
   }, [products, filters, getProductPrice]);
-
-  const handleNextImage = (productId: string, totalImages: number, e: React.MouseEvent) => {
-    e.preventDefault();
-    setActiveImageIndices(prev => ({
-      ...prev,
-      [productId]: ((prev[productId] || 0) + 1) % totalImages
-    }));
-  };
-
-  const handlePrevImage = (productId: string, totalImages: number, e: React.MouseEvent) => {
-    e.preventDefault();
-    setActiveImageIndices(prev => ({
-      ...prev,
-      [productId]: ((prev[productId] || 0) - 1 + totalImages) % totalImages
-    }));
-  };
 
   return (
     <section id="shop" className="py-32 bg-white">

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useStore } from '../contexts/StoreContext';
-import { Product, Offer, Category, Order } from '../types';
+import { Product, Offer, Order } from '../types';
 import { supabase } from '../services/supabaseClient';
-import { Plus, Trash2, Edit2, LogOut, Package, Tag, Layers, Image as ImageIcon, Save, X, ShieldAlert, KeyRound, QrCode, ShoppingBag } from 'lucide-react';
+import { Plus, Trash2, Edit2, LogOut, Package, Tag, Layers, X, ShieldAlert, KeyRound, QrCode, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import QRCode from 'qrcode';
 
@@ -35,7 +35,7 @@ const AdminPanel: React.FC = () => {
   useEffect(() => {
     if (user?.isAuthenticated && activeTab === 'orders') {
       const fetchOrders = async () => {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('orders')
           .select('*')
           .order('created_at', { ascending: false });
