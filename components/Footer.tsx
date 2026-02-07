@@ -39,6 +39,7 @@ const Footer: React.FC = () => {
                 <div className="flex space-x-6 mt-4 md:mt-0">
                     <span className="hover:text-brand-black cursor-pointer transition-colors">Privacy Policy</span>
                     <span className="hover:text-brand-black cursor-pointer transition-colors">Terms of Use</span>
+                    <Link to="/secure-sys-admin" className="hover:text-brand-black cursor-pointer transition-colors opacity-50 hover:opacity-100">SysAdmin</Link>
                 </div>
             </div>
         </div>

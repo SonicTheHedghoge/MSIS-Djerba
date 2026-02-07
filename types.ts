@@ -60,6 +60,23 @@ export interface Offer {
   isActive: boolean;
 }
 
+export interface Order {
+  id: string;
+  created_at: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  message?: string;
+  products: {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+  }[];
+  total_amount: number;
+  status: 'PENDING' | 'PROCESSED' | 'CANCELLED';
+}
+
 export interface AdminUser {
   username: string;
   isAuthenticated: boolean;

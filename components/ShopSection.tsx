@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, ShoppingCart, Search, Filter, X } from 'lucide-react';
 import { useStore } from '../contexts/StoreContext';
+import { useCart } from '../contexts/CartContext';
 import { ProductFilter } from '../types';
 
 const ShopSection: React.FC = () => {
   const { products, categories, getProductPrice } = useStore();
+  const { addToCart } = useCart();
   const [activeImageIndices, setActiveImageIndices] = useState<Record<string, number>>({});
   
   // Filter State
@@ -263,8 +265,9 @@ const ShopSection: React.FC = () => {
                                         </div>
                                     </div>
                                     <button 
+                                        onClick={() => addToCart(product, currentPrice)}
                                         disabled={product.stock <= 0}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${product.stock > 0 ? 'bg-[#f5f5f7] text-[#0071e3] hover:bg-[#0071e3] hover:text-white' : 'bg-gray-100 text-gray-300 cursor-not-allowed'}`}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-110 ${product.stock > 0 ? 'bg-[#0071e3] text-white' : 'bg-gray-100 text-gray-300 cursor-not-allowed'}`}
                                     >
                                         <ShoppingCart size={18} />
                                     </button>

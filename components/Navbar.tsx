@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, ShoppingBag } from 'lucide-react';
 import { BUSINESS_INFO } from '../constants';
+import { useCart } from '../contexts/CartContext';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { openCart, items } = useCart();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -68,9 +70,14 @@ const Navbar: React.FC = () => {
 
             {/* Actions */}
             <div className="hidden md:flex items-center gap-5 relative z-50">
-                 <a href="#shop" onClick={(e) => handleScroll(e, '#shop')} className="text-[#1d1d1f] hover:text-[#0071e3] transition-colors">
+                 <button onClick={openCart} className="text-[#1d1d1f] hover:text-[#0071e3] transition-colors relative">
                     <ShoppingBag size={18} strokeWidth={2} />
-                 </a>
+                    {items.length > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-[#0071e3] text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-bold">
+                        {items.length}
+                      </span>
+                    )}
+                 </button>
                  <a 
                     href={`tel:${BUSINESS_INFO.phone.replace(/\s/g, '')}`}
                     className="bg-[#0071e3] text-white px-4 py-1.5 rounded-full text-[12px] font-medium hover:bg-[#0077ED] transition-all hover:shadow-lg hover:shadow-blue-500/30"
@@ -100,6 +107,14 @@ const Navbar: React.FC = () => {
                     {link.name}
                 </a>
                 ))}
+                
+                <button 
+                  onClick={() => { setIsOpen(false); openCart(); }}
+                  className="text-xl font-semibold text-[#1d1d1f] hover:text-[#0071e3] flex items-center gap-2"
+                >
+                  Shopping Bag ({items.length})
+                </button>
+
                  <a 
                     href={`tel:${BUSINESS_INFO.phone.replace(/\s/g, '')}`}
                     className="mt-8 bg-[#0071e3] text-white px-8 py-4 rounded-2xl text-lg font-medium shadow-xl shadow-blue-500/20 w-full max-w-xs"

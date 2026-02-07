@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useStore } from '../contexts/StoreContext';
-import { Product, Offer, Category } from '../types';
-import { Plus, Trash2, Edit2, LogOut, Package, Tag, Layers, Image as ImageIcon, Save, X, ShieldAlert, KeyRound, QrCode } from 'lucide-react';
+import { Product, Offer, Category, Order } from '../types';
+import { supabase } from '../services/supabaseClient';
+import { Plus, Trash2, Edit2, LogOut, Package, Tag, Layers, Image as ImageIcon, Save, X, ShieldAlert, KeyRound, QrCode, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import QRCode from 'qrcode';
 
@@ -24,10 +25,26 @@ const AdminPanel: React.FC = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
 
   // Dashboard State
-  const [activeTab, setActiveTab] = useState<'products' | 'offers' | 'categories' | 'audit'>('products');
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'offers' | 'categories' | 'audit'>('orders');
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [editingOffer, setEditingOffer] = useState<Partial<Offer> | null>(null);
   const [newCategory, setNewCategory] = useState('');
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  // Fetch Orders
+  useEffect(() => {
+    if (user?.isAuthenticated && activeTab === 'orders') {
+      const fetchOrders = async () => {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (data) setOrders(data as Order[]);
+      };
+      fetchOrders();
+    }
+  }, [user, activeTab]);
 
   // Generate QR Code when MFA Setup is required
   useEffect(() => {
@@ -40,11 +57,6 @@ const AdminPanel: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (requiresMfaSetup) {
-      // Logic for confirming setup
-       // In this flow, we assume the user scans and enters a code to "complete" login, 
-       // but our context simplifies this to just "Complete Setup" button for this demo, 
-       // effectively trusting the user scanned it.
-       // In a real app, we would verify a code here.
        completeMfaSetup();
        return;
     }
@@ -239,6 +251,12 @@ const AdminPanel: React.FC = () => {
         
         <nav className="flex-1 space-y-2">
             <button 
+                onClick={() => setActiveTab('orders')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'orders' ? 'bg-[#0071e3] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+            >
+                <ShoppingBag size={18} /> Orders
+            </button>
+            <button 
                 onClick={() => setActiveTab('products')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'products' ? 'bg-[#0071e3] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
             >
@@ -275,6 +293,65 @@ const AdminPanel: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 ml-64 p-10">
         
+        {/* ORDERS TAB */}
+        {activeTab === 'orders' && (
+             <div className="max-w-5xl mx-auto">
+                <h1 className="text-3xl font-bold text-[#1d1d1f] mb-8">Incoming Orders</h1>
+                {orders.length === 0 ? (
+                  <div className="text-center p-12 bg-white rounded-3xl border border-gray-200">
+                    <ShoppingBag size={48} className="mx-auto text-gray-300 mb-4" />
+                    <p className="text-gray-500">No orders received yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {orders.map(order => (
+                      <div key={order.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <h3 className="font-bold text-lg text-[#1d1d1f]">{order.full_name}</h3>
+                              <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-500">{new Date(order.created_at).toLocaleString()}</span>
+                            </div>
+                            <div className="text-sm text-gray-500 mt-1">
+                              {order.phone} • {order.email}
+                            </div>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 
+                            order.status === 'PROCESSED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {order.status}
+                          </span>
+                        </div>
+                        
+                        <div className="bg-[#f5f5f7] rounded-xl p-4 mb-4">
+                          <p className="text-xs font-bold text-gray-500 uppercase mb-2">Order Items</p>
+                          <ul className="space-y-2">
+                            {order.products.map((p, idx) => (
+                              <li key={idx} className="flex justify-between text-sm">
+                                <span>{p.quantity}x {p.name}</span>
+                                <span className="font-medium">{p.price.toFixed(2)} TND</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <div className="border-t border-gray-200 mt-3 pt-3 flex justify-between font-bold text-[#1d1d1f]">
+                            <span>Total</span>
+                            <span>{order.total_amount.toFixed(2)} TND</span>
+                          </div>
+                        </div>
+
+                        {order.message && (
+                          <div className="text-sm text-gray-600 italic bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            "{order.message}"
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+            </div>
+        )}
+
         {/* AUDIT LOG TAB */}
         {activeTab === 'audit' && (
              <div className="max-w-5xl mx-auto">
